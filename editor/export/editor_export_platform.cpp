@@ -1062,6 +1062,7 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 	//figure out paths of files that will be exported
 	HashSet<String> paths;
 	Vector<String> path_remaps;
+	add_message(EXPORT_MESSAGE_INFO, TTR("Export"), TTR("MODIFIED: Exporting all resources..."));
 
 	if (p_preset->get_export_filter() == EditorExportPreset::EXPORT_ALL_RESOURCES) {
 		//find stuff
@@ -1479,6 +1480,20 @@ Error EditorExportPlatform::export_project_files(const Ref<EditorExportPreset> &
 			if (err != OK) {
 				return err;
 			}
+		}
+		bool force_binary = convert_text_to_binary && (path.get_extension().to_lower() == "tres" || path.get_extension().to_lower() == "tscn");
+		String export_path = _export_customize(path, customize_resources_plugins, customize_scenes_plugins, export_cache, export_base_path, force_binary);
+
+		if (export_path != path) {
+			// Add a remap entry.
+			path_remaps.push_back(path);
+			path_remaps.push_back(export_path);
+		}
+
+		Vector<uint8_t> array = FileAccess::get_file_as_bytes(export_path);
+		err = save_proxy.save_file(p_udata, export_path, array, idx, total, enc_in_filters, enc_ex_filters, key, seed);
+		if (err != OK) {
+			return err;
 		}
 	}
 
